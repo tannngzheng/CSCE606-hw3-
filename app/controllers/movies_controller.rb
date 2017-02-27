@@ -1,4 +1,9 @@
 class MoviesController < ApplicationController
+  def initialize
+    @all_ratings = Movie.all_ratings
+    @rating_selection = @all_ratings.map { |rating| [rating, true] }.to_h
+    super
+  end
 
   def movie_params
     params.require(:movie).permit(:title, :rating, :description, :release_date)
@@ -11,14 +16,23 @@ class MoviesController < ApplicationController
   end
 
   def index
-     @sort = params[:sort_by]
-     if @sort == 'title' || @sort == 'release_date'
-       @movies = Movie.all.order(@sort)
-       eval("@sort_by_" + @sort + " = 'hilite'")
-     else
-       @movies = Movie.all
-     end
+    @movies = Movie.all
+
+    sort = params[:sort_by]
+    ratings = params[:ratings]
+
+    if sort == 'title' || sort == 'release_date'
+      @movies = @movies.order(sort)
+      eval('@sort_by_' + sort + " = 'hilite'")
+    elsif ratings
+      ratings = ratings.keys
+      @movies = @movies.where(rating: ratings)
+      @all_ratings.each do |rating|
+        @rating_selection[rating] = ratings.include? rating
+      end
+    end
   end
+
   def new
     # default: render 'new' template
   end
