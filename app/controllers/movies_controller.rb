@@ -1,7 +1,7 @@
 class MoviesController < ApplicationController
   def initialize
     @all_ratings = Movie.all_ratings
-    @rating_selection = @all_ratings.map { |rating| [rating, true] }.to_h
+    @rating_selected = @all_ratings.map { |rating| [rating, true] }.to_h
     super
   end
 
@@ -18,18 +18,33 @@ class MoviesController < ApplicationController
   def index
     @movies = Movie.all
 
-    sort = params[:sort_by]
-    ratings = params[:ratings]
+    if params[:ratings]
+      ratings = params[:ratings].keys
+    elsif session[:filter]
+      ratings = session[:filter]
+    else
+      ratings = nil
+    end
 
-    if sort == 'title' || sort == 'release_date'
-      @movies = @movies.order(sort)
-      eval('@sort_by_' + sort + " = 'hilite'")
-    elsif ratings
-      ratings = ratings.keys
-      @movies = @movies.where(rating: ratings)
+    if params[:sort_by]
+      sort_by = params[:sort_by]
+    elsif session[:sort_by]
+      sort_by = session[:sort_by]
+    else
+      sort_by = nil
+    end
+
+    if ratings
+      @movies = @movies.where!(rating: ratings)
       @all_ratings.each do |rating|
-        @rating_selection[rating] = ratings.include? rating
+        @rating_selected[rating] = ratings.include? rating
       end
+      session[:filter] = ratings
+    end
+
+    if sort_by == 'title' || sort_by == 'release_date'
+      @movies.order!(sort_by)
+      session[:sort_by] = sort_by
     end
   end
 
